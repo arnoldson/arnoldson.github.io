@@ -1,10 +1,10 @@
 # Site settings
-title: Web Developer
+title: Arnold Son
 email: arnold.son@icloud.com
 url: https://arnoldson.github.io
 description: "Arnold Son: full stack web developer with experience in MEAN, Python Django and iOS."
 keywords: "Web Developer, MEAN, Django, Python, Angular, iOS, JavaScript, Java, Python, Swift"
-skills: "Web Developer"
+skills: "Full-stack Web Developer: MEAN, Python Django, iOS"
 meta_author: Son Arnold
 
 # Google webmaster tools
@@ -43,7 +43,7 @@ social:
   - title: linkedin
     url: https://www.linkedin.com/in/arnold-son/
   - title: github
-    url: http://github.com/jekyll
+    url: https://github.com/arnoldson
 
 # Postal address (add as many lines as necessary)
 address:
