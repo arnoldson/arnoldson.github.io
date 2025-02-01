@@ -1,11 +1,15 @@
 // todo: refactor as object
 
-let scoreSheet
-let boardSize
 const PLAYER_ONE_VALUE = 1
 const PLAYER_TWO_VALUE = -1
 
-export function createBoard(size) {
+export function createGame(size) {
+  const board = createBoard(size)
+  const scoreSheet = createScoreSheet(size)
+  return { board, scoreSheet }
+}
+
+function createBoard(size) {
   const board = []
   for (let index = 0; index < size; index++) {
     const row = {
@@ -46,11 +50,11 @@ function isDiagonalOne(row, col) {
   return row === col
 }
 
-function isDiagonalTwo(row, col) {
+function isDiagonalTwo(row, col, boardSize) {
   return row === boardSize - 1 - col
 }
 
-function markScore(row, col, player) {
+export function markScore(row, col, player, scoreSheet) {
   const value = player === 1 ? PLAYER_ONE_VALUE : PLAYER_TWO_VALUE
   scoreSheet.rowScores[row] += value
   scoreSheet.columnScores[col] += value
@@ -58,7 +62,7 @@ function markScore(row, col, player) {
   if (isDiagonalTwo) scoreSheet.diagonalTwo += value
 }
 
-function getWinner(row, col) {
+export function getWinner(row, col, scoreSheet, boardSize) {
   if (
     scoreSheet.rowScores[row] === boardSize ||
     scoreSheet.columnScores[col] === boardSize ||
