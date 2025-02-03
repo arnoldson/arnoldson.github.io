@@ -4,6 +4,9 @@
 
 body {
   margin: 0;
+  padding: 0;
+  text-align: center;
+  background-color: #ccc;
 }
 
 .container {
@@ -66,4 +69,30 @@ body {
   justify-content: center;
   align-items: center;
   color: white;
+}
+
+/* About me page */
+
+.section {
+  width: 50%;
+  margin: 50px auto;
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.section-img {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.section-header {
+  margin: 0;
+}
+
+.section-content {
+  padding: 1rem;
+  margin: 0;
+  line-height: 1.6;
 }
