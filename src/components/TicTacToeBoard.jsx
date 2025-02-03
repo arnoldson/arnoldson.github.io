@@ -34,10 +34,19 @@ function markScore(row, col, player, scoreSheet, size) {
   scoreSheet.columnScores[col] += value
   if (isDiagonalOne(row, col)) scoreSheet.diagonalOne += value
   if (isDiagonalTwo(row, col, size)) scoreSheet.diagonalTwo += value
-  console.log("score: ", scoreSheet)
+  console.log("score from markScore: ", scoreSheet)
 }
 
 function getWinner(row, col, scoreSheet, boardSize) {
+  console.log(`Finding winner from row ${row} col ${col}`)
+  console.log("scoreSheet for winner: ", scoreSheet)
+  console.log(`boardSize: ${boardSize}`)
+
+  console.log("scoreSheet.diagonalOne: ", scoreSheet.diagonalOne)
+  console.log("boardSize: ", boardSize)
+
+  console.log("test: ", scoreSheet.diagonalOne === boardSize)
+
   if (
     scoreSheet.rowScores[row] === boardSize ||
     scoreSheet.columnScores[col] === boardSize ||
@@ -57,18 +66,44 @@ function getWinner(row, col, scoreSheet, boardSize) {
   return 0
 }
 
-export function TicTacToeBoard({ size = 5 }) {
-  const [board, setBoard] = useState(() => {
-    const newBoard = []
-    for (let index = 0; index < size; index++) {
-      newBoard.push(Array(size).fill(null))
-    }
-    return newBoard
-  })
+export function TicTacToeBoard({ size }) {
+  const [board, setBoard] = useState(null)
+
   const [xIsNext, setXisNext] = useState(true)
   const [winner, setWinner] = useState(0)
 
-  const [scoreSheet, setScoreSheet] = useState(createScoreSheet(size))
+  const [scoreSheet, setScoreSheet] = useState(null)
+
+  function initialize() {
+    const newBoard = []
+    for (let index = 0; index < size; index++) {
+      const row = []
+      for (let j = 0; j < size; j++) {
+        row.push(null)
+      }
+      newBoard.push(row)
+    }
+    setBoard(newBoard)
+    setXisNext(true)
+    setWinner(0)
+    setScoreSheet(createScoreSheet(size))
+  }
+
+  useEffect(() => {
+    initialize()
+  }, [size])
+  // const [board, setBoard] = useState(() => {
+  //   const newBoard = []
+  //   for (let index = 0; index < size; index++) {
+  //     newBoard.push(Array(size).fill(null))
+  //   }
+  //   return newBoard
+  // })
+
+  // const [xIsNext, setXisNext] = useState(true)
+  // const [winner, setWinner] = useState(0)
+
+  // const [scoreSheet, setScoreSheet] = useState(createScoreSheet(size))
 
   function handleClick(row, column) {
     if (board[row][column] || winner > 0) return
@@ -80,7 +115,10 @@ export function TicTacToeBoard({ size = 5 }) {
     }
     const newScoreSheet = structuredClone(scoreSheet)
     markScore(row, column, xIsNext ? 1 : 2, newScoreSheet, size)
-    setWinner(getWinner(row, column, newScoreSheet, size))
+    const newWinner = getWinner(row, column, newScoreSheet, size)
+    console.log("newWinner: ", newWinner)
+
+    setWinner(newWinner)
     setScoreSheet(newScoreSheet)
     setXisNext(!xIsNext)
     setBoard(newBoard)
@@ -91,17 +129,18 @@ export function TicTacToeBoard({ size = 5 }) {
       <h1>{winner > 0 && `The winner is: ${winner === 1 ? "X" : "O"}`}</h1>
       <h2>{`${xIsNext ? "X" : "O"}'s turn`}</h2>
       <div className="tictactoe-board">
-        {board.map((tiles, rowIndex) => (
-          <div key={rowIndex} className="tictactoe-row">
-            {tiles.map((tileValue, columnIndex) => (
-              <TicTacToeTile
-                key={`r${rowIndex}c${columnIndex}`}
-                value={tileValue}
-                onSquareClick={() => handleClick(rowIndex, columnIndex)}
-              />
-            ))}
-          </div>
-        ))}
+        {board &&
+          board.map((tiles, rowIndex) => (
+            <div key={rowIndex} className="tictactoe-row">
+              {tiles.map((tileValue, columnIndex) => (
+                <TicTacToeTile
+                  key={`r${rowIndex}c${columnIndex}`}
+                  value={tileValue}
+                  onSquareClick={() => handleClick(rowIndex, columnIndex)}
+                />
+              ))}
+            </div>
+          ))}
       </div>
     </>
   )

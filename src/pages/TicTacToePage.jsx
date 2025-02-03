@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { TicTacToeBoard } from "../components/TicTacToeBoard"
 
 export function TicTacToePage() {
@@ -7,7 +7,13 @@ export function TicTacToePage() {
   return (
     <>
       <h1>Tic-tac-toe</h1>
-      <TicTacToeBoard size={10} />
+      <label htmlFor="size">Set board size:</label>
+      <input
+        type="text"
+        value={boardSize}
+        onChange={(e) => setBoardSize(parseInt(e.target.value))}
+      />
+      <TicTacToeBoard size={boardSize} />
     </>
   )
 }
