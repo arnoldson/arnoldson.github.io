@@ -7,6 +7,7 @@ body {
   padding: 0;
   text-align: center;
   background-color: #ccc;
+  min-height: 100vh;
 }
 
 .container {
@@ -14,7 +15,6 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 100vh;
 }
 
 .nav {
