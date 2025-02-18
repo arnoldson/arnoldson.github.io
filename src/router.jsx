@@ -7,7 +7,7 @@ import { TicTacToePage } from "./pages/TicTacToePage"
 
 export const router = createBrowserRouter([
   {
-    path: "/portfolio",
+    path: "/",
     element: <RootLayout />,
     children: [
       { path: "about", element: <About /> },
