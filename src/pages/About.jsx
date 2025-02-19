@@ -1,7 +1,7 @@
 export function About() {
   return (
     <div className="section">
-      <img className="section-img" src="./img/IMG_5012.JPG" alt="" />
+      <img className="section-img" src="/img/IMG_5012.JPG" alt="" />
       <h1 className="section-header">ABOUT ME</h1>
       <p className="section-content">
         Passionate about crafting seamless web experiences, I’m a web developer
