@@ -45,11 +45,11 @@ export function Navbar() {
             Projects
           </Link>
         </li>
-        <li>
+        {/* <li>
           <Link className="nav-link" to="toybox">
             Toy Box
           </Link>
-        </li>
+        </li> */}
       </ul>
     </nav>
   )

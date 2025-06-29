@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { TicTacToeBoard } from "../components/TicTacToeBoard"
 
 export function TicTacToePage() {

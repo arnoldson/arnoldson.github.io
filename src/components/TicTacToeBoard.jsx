@@ -1,4 +1,4 @@
-import { createContext, useEffect, useRef, useState } from "react"
+import { createContext, useEffect, useState } from "react"
 import { TicTacToeTile } from "./TicTacToeTile"
 export const TicTacToeContext = createContext()
 
