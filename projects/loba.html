@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loba: Local Posts · Arnold</title>
+<meta name="description" content="Loba: an anonymous, hyperlocal message board for iOS, built with React Native.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141311" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Loba: Local Posts">
+<meta property="og:description" content="An anonymous, hyperlocal message board for iOS, built with React Native.">
+<meta property="og:type" content="article">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="../assets/fonts/fraunces-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../assets/fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+<script src="../assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="../">arnold</a>
+    <nav class="nav" aria-label="Main">
+      <a href="../#work" aria-current="page">Work</a>
+      <a href="../#about">About</a>
+      <a href="YOUR_RESUME_PDF_URL">Resume</a>
+      <a href="../#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <div class="p-hero">
+    <a class="crumb" href="../#work">← All work</a>
+    <p class="badge beta">TestFlight build</p>
+    <h1>Loba: Local Posts</h1>
+    <p class="lede">An anonymous, hyperlocal message board for iOS. Instead of following people, you see what's being said around you: a noisy construction site, a good food truck, a lost dog.</p>
+    <div class="btns">
+      <a class="btn primary" href="https://github.com/arnoldson/YOUR_LOBA_REPO">Code on GitHub</a>
+      <a class="btn" href="../#contact">TestFlight build on request</a>
+    </div>
+  </div>
+
+  <div class="p-media">
+    <div class="media ph" style="aspect-ratio:16/9">[Walkthrough: open app → nearby feed → map → new post]</div>
+    <!-- <button class="yt" data-yt="YOUTUBE_VIDEO_ID" aria-label="Play walkthrough: Loba"><span class="play">▶ Watch the walkthrough</span></button> -->
+  </div>
+
+  <dl class="glance">
+    <div><dt>role</dt><dd>Solo: app, API, release</dd></div>
+    <div><dt>status</dt><dd>Distributed on TestFlight</dd></div>
+    <div><dt>stack</dt><dd>React Native, TypeScript</dd></div>
+    <div><dt>backend</dt><dd>API on Railway <!-- EDIT: framework + database --></dd></div>
+  </dl>
+
+  <article class="prose">
+    <h2>What it does</h2>
+    <ul>
+      <li>A feed of posts near your current location.</li>
+      <li>A map showing your position and nearby posts together.</li>
+      <li>Anonymous posting: no profiles and no followers.</li>
+      <li>Posts expire after a set time, so the feed stays current.</li>
+    </ul>
+
+    <h2>How it works</h2>
+    <div class="flow" aria-label="iOS app to the API on Railway to the database">
+      <span>iOS app (React Native)</span><i>→</i><span>API (apps/backend, Railway)</span><i>→</i><span>[database]</span>
+    </div>
+    <p>The app and the API live in one monorepo. <!-- EDIT: one or two sentences on how "posts near me" is queried, e.g. a geo index or distance filter. --></p>
+
+    <h2>Key decisions</h2>
+    <div class="decision">
+      <h3>Keeping dev-only routes out of production</h3>
+      <dl>
+        <dt>problem</dt><dd>Debug and test routes (under <code>app/dev/</code>) are useful while building, and dangerous if one ships.</dd>
+        <dt>choice</dt><dd>A pre-commit hook that makes me confirm any commit adding a route, plus a CI check on backend changes. Only dev and test route patterns are restricted. Product routes can be named anything.</dd>
+        <dt>result</dt><dd>Guardrails cover the risky case and stay out of the way otherwise.</dd>
+      </dl>
+    </div>
+    <div class="decision">
+      <h3>Scoping out the App Store</h3>
+      <dl>
+        <dt>problem</dt><dd>Apps built on anonymous user content must meet Apple's moderation requirements: filtering objectionable posts, reporting, blocking users, and published contact details.</dd>
+        <dt>choice</dt><dd>Ship through TestFlight and keep App Store release out of scope until a real moderation system exists.</dd>
+        <dt>result</dt><dd>A finished, installable build. I can describe exactly what a public release would take.</dd>
+      </dl>
+    </div>
+    <div class="decision">
+      <h3>Location and anonymity</h3>
+      <dl>
+        <dt>problem</dt><dd>With exact coordinates, an "anonymous" post can point to someone's home.</dd>
+        <dt>choice</dt><dd>[EDIT: what you do, e.g. rounding stored coordinates or returning distances instead of positions. If it isn't built yet, say so and describe the plan.]</dd>
+        <dt>result</dt><dd>[EDIT]</dd>
+      </dl>
+    </div>
+
+    <h2>A bug worth mentioning</h2>
+    <p>The map couldn't show the current-location pin and a post's pin correctly at the same time. <!-- EDIT: one sentence on the root cause and the fix. --></p>
+
+    <h2>Screens</h2>
+    <div class="gallery phones">
+      <div class="media ph">[Feed]</div>
+      <div class="media ph">[Map]</div>
+      <div class="media ph">[New post]</div>
+    </div>
+
+    <h2>What a public release would take</h2>
+    <ul>
+      <li>Content filtering and a report flow for posts.</li>
+      <li>Blocking abusive users, which is hard to do while staying anonymous.</li>
+      <li>Published contact information and a moderation process.</li>
+    </ul>
+  </article>
+
+  <nav class="next" aria-label="More projects">
+    <a href="port-exhaustion.html"><span class="k">← Previous</span><span class="t">Ephemeral port exhaustion</span></a>
+    <a class="right" href="mgl.html"><span class="k">Next →</span><span class="t">MGL: My Game List</span></a>
+  </nav>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap"><span>© 2026 Arnold</span><a href="../">Home</a></div>
+</footer>
+</body>
+</html>

@@ -1,13 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <!-- <link rel="icon" type="image/svg+xml" href="/vite.svg" /> -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Arnold Son</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arnold: Software Developer</title>
+<meta name="description" content="Arnold, software developer. Full-stack TypeScript (Next.js, Postgres) and Java. A live web app, an iOS app, and a networking case study.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141311" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Arnold: Software Developer">
+<meta property="og:description" content="Full-stack web apps, and the write-ups to show why they work.">
+<meta property="og:type" content="website">
+<!-- <meta property="og:image" content="https://YOUR_SITE_URL/assets/og.png"> -->
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/fraunces-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="./">arnold</a>
+    <nav class="nav" aria-label="Main">
+      <a href="#work">Work</a>
+      <a href="#about">About</a>
+      <a href="YOUR_RESUME_PDF_URL">Resume</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">// software developer · Orlando, FL</p>
+      <h1>I build web apps end to end, and I <em>write down why</em> they work.</h1>
+      <p class="lede">Full-stack TypeScript (Next.js, React, Postgres) and Java. Below: a live web app, an iOS app on TestFlight, and a case study where I rebuilt a production networking failure and fixed it.</p>
+      <div class="btns">
+        <a class="btn primary" href="#work">See my work</a>
+        <a class="btn" href="YOUR_RESUME_PDF_URL">Resume (PDF)</a>
+        <a class="btn" href="https://github.com/arnoldson">GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="work">
+    <div class="wrap">
+      <h2>Selected work</h2>
+      <div class="work">
+
+        <a class="work-row" href="projects/mgl.html">
+          <div class="media ph">[MGL screenshot or loop]
+            <!-- <img src="assets/img/mgl-hero.webp" width="1280" height="800" alt="MyGameList game list on desktop" decoding="async"> -->
+          </div>
+          <div class="text">
+            <p class="badge live">Live in production</p>
+            <h3>MGL: My Game List</h3>
+            <p class="desc">Track the games you play, inspired by MyAnimeList. Migrated to Auth.js v5 and fixed two production session bugs. Password reset with hashed, expiring tokens.</p>
+            <p class="stack">Next.js 16 · Auth.js v5 · Prisma · Postgres · Playwright</p>
+            <p class="more">Read the case study →</p>
+          </div>
+        </a>
+
+        <a class="work-row" href="projects/port-exhaustion.html">
+          <div class="media stat" aria-label="Failed calls dropped from 71,731 to 0">
+            <p class="k">1,000 req/s for 150 s · failed calls</p>
+            <p class="v">71,731 <span>→ 0</span></p>
+            <p class="k">new connection per request → connection pool</p>
+          </div>
+          <div class="text">
+            <p class="badge study">Case study</p>
+            <h3>Ephemeral port exhaustion</h3>
+            <p class="desc">A production incident I saw at a previous job, rebuilt in Docker, explained, and fixed with a connection pool I wrote. Measured against Jetty's HttpClient and the kernel workaround.</p>
+            <p class="stack">Java 25 · Jetty 12 · TCP · Docker · load testing</p>
+            <p class="more">Read the case study →</p>
+          </div>
+        </a>
+
+        <a class="work-row" href="projects/loba.html">
+          <div class="media ph">[Loba phone screens]
+            <!-- <img src="assets/img/loba-hero.webp" width="1280" height="800" alt="Loba feed and map on iPhone" decoding="async" loading="lazy"> -->
+          </div>
+          <div class="text">
+            <p class="badge beta">TestFlight build</p>
+            <h3>Loba: Local Posts</h3>
+            <p class="desc">An anonymous, hyperlocal message board for iOS. A map and feed of what's happening around you, with guardrails that keep dev-only routes out of production.</p>
+            <p class="stack">React Native · TypeScript · iOS · Railway</p>
+            <p class="more">Read the case study →</p>
+          </div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="about">
+    <div class="wrap about">
+      <div>
+        <h2 style="font-weight:600;font-size:30px;margin-bottom:16px">About</h2>
+        <p>Most recently I worked in a non-technical role at a tech company. Being close to production systems without owning them made me want to build them.</p>
+        <p>I'm finishing a CS degree at SNHU and looking for a junior or associate software engineer role.</p>
+      </div>
+      <div class="skills">
+        <p>TypeScript · JavaScript · Java · SQL · C++</p>
+        <p>Next.js · React · React Native · Tailwind</p>
+        <p>PostgreSQL · Prisma · Supabase · Docker</p>
+        <p>Playwright · GitHub Actions · Vercel</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section contact" id="contact">
+    <div class="wrap">
+      <h2>Let's talk.</h2>
+      <p class="addr">YOUR_EMAIL</p>
+      <div class="btns">
+        <a class="btn primary" href="mailto:YOUR_EMAIL">Email me</a>
+        <a class="btn" href="https://YOUR_LINKEDIN">LinkedIn</a>
+        <a class="btn" href="https://github.com/arnoldson">GitHub</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap"><span>© 2026 Arnold</span><span>Plain HTML and CSS on GitHub Pages</span></div>
+</footer>
+</body>
 </html>

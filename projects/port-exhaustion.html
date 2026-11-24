@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ephemeral port exhaustion: case study · Arnold</title>
+<meta name="description" content="Reproducing and fixing a production ephemeral port exhaustion incident in Java: 71,731 failed calls down to 0 with a hand-written connection pool.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141311" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Ephemeral port exhaustion: reproduce, explain, fix">
+<meta property="og:description" content="71,731 failed calls → 0. A production incident rebuilt in Docker and fixed with a connection pool.">
+<meta property="og:type" content="article">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="../assets/fonts/fraunces-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../assets/fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+<script src="../assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="../">arnold</a>
+    <nav class="nav" aria-label="Main">
+      <a href="../#work" aria-current="page">Work</a>
+      <a href="../#about">About</a>
+      <a href="YOUR_RESUME_PDF_URL">Resume</a>
+      <a href="../#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <div class="p-hero">
+    <a class="crumb" href="../#work">← All work</a>
+    <p class="badge study">Case study</p>
+    <h1>Ephemeral port exhaustion: reproduce, explain, fix</h1>
+    <p class="lede">A Java service calling another service on the same machine ran out of ephemeral ports and started failing with <code>BindException: Cannot assign requested address</code>, while CPU, memory and the downstream service all looked healthy. I rebuilt the failure in Docker, explained the root cause, and fixed it with a connection pool I wrote.</p>
+    <div class="btns">
+      <a class="btn primary" href="https://github.com/arnoldson/connection-pool">Code on GitHub</a>
+      <a class="btn" href="https://github.com/arnoldson/connection-pool/blob/main/docs/OVERVIEW.md">Plain-language version</a>
+      <a class="btn" href="https://github.com/arnoldson/connection-pool/blob/main/docs/BACKGROUND.md">Full technical write-up</a>
+    </div>
+  </div>
+
+  <div class="p-media">
+    <div class="media ph" style="aspect-ratio:16/9">[Walkthrough video: symptom → 470/s math → before run → fix → results]</div>
+    <!-- Once uploaded, replace the div above with:
+    <button class="yt" data-yt="YOUTUBE_VIDEO_ID" aria-label="Play walkthrough: ephemeral port exhaustion"><span class="play">▶ Watch the 90-second walkthrough</span></button> -->
+  </div>
+
+  <dl class="glance">
+    <div><dt>role</dt><dd>Solo: research, code, measurement</dd></div>
+    <div><dt>type</dt><dd>Incident reproduction and fix</dd></div>
+    <div><dt>stack</dt><dd>Java 25, Jetty 12, Docker, Linux</dd></div>
+    <div><dt>tests</dt><dd>21 unit and integration tests</dd></div>
+  </dl>
+
+  <article class="prose">
+    <h2>The incident</h2>
+    <p>Service A called service B over <code>localhost</code> once per incoming request, opening a brand-new TCP connection each time and closing it right after. Under sustained load, calls started failing even though nothing looked overloaded. Restarting "fixed" it until the next peak.</p>
+
+    <h2>Why it happens</h2>
+    <p>Every outgoing connection needs its own <strong>ephemeral port</strong>, and Linux hands out 28,232 of them by default. When A closes a connection, that port isn't free yet. It stays in <strong>TIME_WAIT for 60 seconds</strong>, so stray packets from the old connection can't leak into a new one.</p>
+    <p>So A can open about <strong>28,232 ÷ 60 ≈ 470 new connections per second</strong> to B, however powerful the machine is. Above that rate for long enough, every port is in TIME_WAIT and <code>connect()</code> fails.</p>
+
+    <h3>Why localhost didn't protect it</h3>
+    <p>Newer Linux kernels reuse TIME_WAIT ports on localhost after about a second (<code>tcp_tw_reuse=2</code>, now the default). The incident machine ran an older kernel with the full 60-second wait, so the reproduction sets <code>tcp_tw_reuse=0</code> on a modern kernel to match it.</p>
+
+    <h2>The reproduction</h2>
+    <div class="flow" aria-label="Load generator to service A to service B over loopback">
+      <span>load generator<br>1,000 req/s</span><i>→</i><span>service A (Jetty)<br>new conn per call</span><i>→ loopback →</i><span>service B (Jetty)<br>keep-alive</span>
+    </div>
+    <p>Both services run in Docker. A shares B's network namespace, so they talk over real loopback, and a sampler records TIME_WAIT and established sockets every second. One command runs all four scenarios with a live terminal dashboard.</p>
+    <figure>
+      <div class="media ph" style="aspect-ratio:16/9">[Terminal dashboard during the "before" run]</div>
+      <figcaption>The live dashboard during the "before" scenario.</figcaption>
+    </figure>
+
+    <h2>Results</h2>
+    <p>Each scenario ran at 1,000 requests per second for 150 seconds, with the default port range.</p>
+    <div class="table-box">
+      <table>
+        <thead><tr><th>Client</th><th class="num">Failed calls</th><th class="num">Peak TIME_WAIT</th><th class="num">p99</th></tr></thead>
+        <tbody>
+          <tr><td>New connection per request (the incident)</td><td class="num bad">71,731</td><td class="num">28,231</td><td class="num">–</td></tr>
+          <tr class="hi"><td>My connection pool</td><td class="num">0</td><td class="num">7</td><td class="num">3.17 ms</td></tr>
+          <tr><td>Jetty <code>HttpClient</code></td><td class="num">0</td><td class="num">24</td><td class="num">3.57 ms</td></tr>
+          <tr><td>Kernel workaround (<code>tcp_tw_reuse=1</code>)</td><td class="num">0</td><td class="num">14,045</td><td class="num">4.94 ms</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure>
+      <img src="../assets/charts/time-wait.svg" width="720" height="380" alt="TIME_WAIT over time: the before scenario climbs to the 28,232-port limit in about 30 seconds and stays near it; the kernel workaround levels off around 14,000; the pool and Jetty stay near zero." loading="lazy" decoding="async">
+      <figcaption>With a new connection per request, ports fill at about 1,000 per second and hit the limit around 30 s. The pool keeps a handful of connections and reuses them.</figcaption>
+    </figure>
+    <figure>
+      <img src="../assets/charts/before-calls.svg" width="720" height="380" alt="Successful and failed calls per second in the before scenario: about 1,000 successes per second until 30 seconds, then only errors until about 65 seconds, then successes until about 95 seconds, then errors again." loading="lazy" decoding="async">
+      <figcaption>It isn't a one-time outage. As the first TIME_WAITs expire, the service works for about 30 s and then fails again.</figcaption>
+    </figure>
+
+    <h2>Key decisions</h2>
+    <div class="decision">
+      <h3>Write the pool myself instead of only configuring a library</h3>
+      <dl>
+        <dt>problem</dt><dd>Turning on keep-alive in a library fixes the bug but hides how.</dd>
+        <dt>choice</dt><dd>About 200 lines of plain Java with no dependencies, compared against Jetty's production client.</dd>
+        <dt>result</dt><dd>Same outcome as Jetty (0 errors, slightly lower p99 here), and I can explain every part of it.</dd>
+      </dl>
+    </div>
+    <div class="decision">
+      <h3>A health check on every checkout</h3>
+      <dl>
+        <dt>problem</dt><dd>An idle connection may have been closed by the server, or hold leftover bytes from an earlier response.</dd>
+        <dt>choice</dt><dd>A non-blocking 1-byte read when a connection leaves the pool. It detects both cases without adding latency.</dd>
+        <dt>result</dt><dd>Dead or dirty connections are discarded before a caller can use them.</dd>
+      </dl>
+    </div>
+    <div class="decision">
+      <h3>Release only after a full read, otherwise discard</h3>
+      <dl>
+        <dt>problem</dt><dd>Returning a half-read connection would let the next caller read someone else's response.</dd>
+        <dt>choice</dt><dd>Connections go back with <code>release()</code> only after the response is read completely. Errors, partial reads and server close requests go through <code>discard()</code>.</dd>
+        <dt>result</dt><dd>No caller can ever receive another caller's data.</dd>
+      </dl>
+    </div>
+
+    <h2>Mitigation vs. fix</h2>
+    <p>The kernel workaround also stops the errors, but every request still pays for a TCP handshake and teardown. That shows up as higher p90 latency (about 2× the pool's) and more CPU on the server, which has to accept and close 1,000 connections a second. Widening the port range only raises the ceiling. Reusing connections removes the cause.</p>
+    <figure>
+      <img src="../assets/charts/latency.svg" width="720" height="380" alt="Latency percentiles: pool p50 0.55 ms, p90 1.34 ms, p99 3.17 ms; Jetty 0.71, 1.57, 3.57 ms; kernel workaround 0.88, 2.84, 4.94 ms." loading="lazy" decoding="async">
+    </figure>
+
+    <h2>Honest notes</h2>
+    <ul>
+      <li>The old kernel is emulated with <code>tcp_tw_reuse=0</code> on a modern kernel, not run on a real Ubuntu 18.04 machine.</li>
+      <li>One run on one laptop. Compare scenarios within a run. Absolute numbers vary between runs.</li>
+      <li>The pool covers what this project needs: HTTP/1.1, <code>Content-Length</code> bodies, one route. In production I'd configure Jetty's client or another keep-alive client.</li>
+    </ul>
+  </article>
+
+  <nav class="next" aria-label="More projects">
+    <a href="mgl.html"><span class="k">← Previous</span><span class="t">MGL: My Game List</span></a>
+    <a class="right" href="loba.html"><span class="k">Next →</span><span class="t">Loba: Local Posts</span></a>
+  </nav>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap"><span>© 2026 Arnold</span><a href="../">Home</a></div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MGL: My Game List · Arnold</title>
+<meta name="description" content="MyGameList: a full-stack Next.js app for tracking the games you play. Auth.js v5, Prisma, Postgres, Playwright.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141311" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="MGL: My Game List">
+<meta property="og:description" content="A full-stack Next.js app for tracking the games you play. Live at mygamelist.app.">
+<meta property="og:type" content="article">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="../assets/fonts/fraunces-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../assets/fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/site.css">
+<script src="../assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="../">arnold</a>
+    <nav class="nav" aria-label="Main">
+      <a href="../#work" aria-current="page">Work</a>
+      <a href="../#about">About</a>
+      <a href="YOUR_RESUME_PDF_URL">Resume</a>
+      <a href="../#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <div class="p-hero">
+    <a class="crumb" href="../#work">← All work</a>
+    <p class="badge live">Live in production</p>
+    <h1>MGL: My Game List</h1>
+    <p class="lede">A full-stack web app for keeping track of the games you play, inspired by MyAnimeList. I built and run it on my own: auth, database, a third-party games API, end-to-end tests and deployment.</p>
+    <div class="btns">
+      <a class="btn primary" href="https://www.mygamelist.app">Open the live app</a>
+      <a class="btn" href="https://github.com/arnoldson/mygamelist">Code on GitHub</a>
+    </div>
+  </div>
+
+  <div class="p-media">
+    <div class="media ph" style="aspect-ratio:16/9">[Loop: search a game → add it to a list → change its status]</div>
+    <!-- Short loop: <video src="../assets/img/mgl-loop.mp4" poster="../assets/img/mgl-poster.webp" width="1280" height="720" autoplay muted loop playsinline preload="metadata"></video>
+         Walkthrough: <button class="yt" data-yt="YOUTUBE_VIDEO_ID" aria-label="Play walkthrough: MGL"><span class="play">▶ Watch the walkthrough</span></button> -->
+  </div>
+
+  <dl class="glance">
+    <div><dt>role</dt><dd>Solo: design, build, deploy</dd></div>
+    <div><dt>status</dt><dd>Live at mygamelist.app</dd></div>
+    <div><dt>stack</dt><dd>Next.js 16, React 19, Auth.js v5, Prisma</dd></div>
+    <div><dt>data</dt><dd>Postgres on Supabase, RAWG games API</dd></div>
+  </dl>
+
+  <article class="prose">
+    <h2>What it does</h2>
+    <ul>
+      <li>Search a catalog of games.</li>
+      <li>Track each game with a status (Playing, Plan to play, Completed, On hold, Dropped), a 1–10 rating, a review, hours played, and start and completion dates.</li>
+      <li>Every user gets a public profile and game list.</li>
+      <li>Email and password accounts, with a forgot-password flow by email.</li>
+      <li>Works on phones and desktop, and automated tests check that it does.</li>
+    </ul>
+
+    <h2>How it works</h2>
+    <div class="flow" aria-label="Browser to Next.js on Vercel, then Auth.js and Prisma to Supabase Postgres, and the RAWG API">
+      <span>browser</span><i>→</i><span>Next.js 16 on Vercel</span><i>→</i><span>Auth.js v5 · Prisma</span><i>→</i><span>Postgres (Supabase)</span><i>+</i><span>RAWG API</span>
+    </div>
+    <p>Pages render on the server where they can, and client components handle the interactive parts. Game details come from RAWG. Your list entries live in my database and reference games by ID.</p>
+
+    <h2>Key decisions</h2>
+    <div class="decision">
+      <h3>Two database connection strings</h3>
+      <dl>
+        <dt>problem</dt><dd>Serverless functions open many short-lived connections, but schema commands need features a connection pooler doesn't support.</dd>
+        <dt>choice</dt><dd>The app uses Supabase's transaction pooler. Prisma's CLI uses the session pooler through a separate <code>DIRECT_URL</code>.</dd>
+        <dt>result</dt><dd>Runtime queries scale with traffic, and migrations still work.</dd>
+      </dl>
+    </div>
+    <div class="decision">
+      <h3>A password reset that leaks nothing</h3>
+      <dl>
+        <dt>problem</dt><dd>Reset links are effectively passwords, and reset forms often reveal which emails have accounts.</dd>
+        <dt>choice</dt><dd>Random 32-byte tokens, stored only as SHA-256 hashes, expiring after 1 hour, with earlier tokens cancelled on each new request. The form gives the same reply whether the email exists or not.</dd>
+        <dt>result</dt><dd>A database leak gives nobody working reset links, and the form can't be used to check whether an email is registered.</dd>
+      </dl>
+    </div>
+    <div class="decision">
+      <h3>Tests that don't depend on someone else's API</h3>
+      <dl>
+        <dt>problem</dt><dd>When the free RAWG quota ran out, tests failed for reasons unrelated to my code.</dd>
+        <dt>choice</dt><dd>Browser tests intercept the search API and serve a fixture response. Tests run against their own Postgres in Docker.</dd>
+        <dt>result</dt><dd>A failing test points to a real problem in my code.</dd>
+      </dl>
+    </div>
+
+    <h2>Two session bugs</h2>
+    <h3>Production login always looked logged out</h3>
+    <p>Middleware has to guess whether the session cookie carries the <code>__Secure-</code> prefix used over HTTPS. Behind Vercel's proxy, the request doesn't reliably show the original protocol, so it looked for the wrong cookie. The fix sets that explicitly in production.</p>
+    <h3>"Sign in to add" right after signing in</h3>
+    <p>Login redirects on the client, and the session provider kept the empty session it had cached on the login page. <!-- EDIT: one sentence on the fix. --> A Playwright test now logs in, moves to search without a page reload (it plants a marker that a reload would erase), and checks that the add-to-list controls appear.</p>
+
+    <h2>Testing on small screens</h2>
+    <p>Beyond login, registration and search, a responsive test suite checks that no page scrolls sideways at several screen sizes, that buttons and inputs are big enough to tap, and that no control only works on hover.</p>
+
+    <h2>Screens</h2>
+    <div class="gallery web">
+      <div class="media ph">[Game list, desktop]</div>
+      <div class="media ph">[Search results]</div>
+      <div class="media ph">[Entry editor]</div>
+    </div>
+
+    <h2>What's next</h2>
+    <ul>
+      <li>Move game data from RAWG to IGDB for higher limits and richer metadata.</li>
+      <li>Run the Playwright suite in CI on every push and pull request.</li>
+    </ul>
+  </article>
+
+  <nav class="next" aria-label="More projects">
+    <a href="loba.html"><span class="k">← Previous</span><span class="t">Loba: Local Posts</span></a>
+    <a class="right" href="port-exhaustion.html"><span class="k">Next →</span><span class="t">Ephemeral port exhaustion</span></a>
+  </nav>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap"><span>© 2026 Arnold</span><a href="../">Home</a></div>
+</footer>
+</body>
+</html>
