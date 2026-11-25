@@ -45,9 +45,8 @@
   </div>
 
   <div class="p-media">
-    <div class="media ph" style="aspect-ratio:16/9">[Loop: search a game → add it to a list → change its status]</div>
-    <!-- Short loop: <video src="../assets/img/mgl-loop.mp4" poster="../assets/img/mgl-poster.webp" width="1280" height="720" autoplay muted loop playsinline preload="metadata"></video>
-         Walkthrough: <button class="yt" data-yt="YOUTUBE_VIDEO_ID" aria-label="Play walkthrough: MGL"><span class="play">▶ Watch the walkthrough</span></button> -->
+    <div class="media" style="aspect-ratio:16/9"><video src="../assets/img/mgl/loop.mp4" poster="../assets/img/mgl/loop-poster.webp" width="1280" height="720" autoplay muted loop playsinline preload="metadata" aria-label="Searching for Zelda, adding Breath of the Wild as Currently Playing, then moving it to Completed with a 9/10 rating"></video></div>
+    <!-- Walkthrough: <button class="yt" data-yt="YOUTUBE_VIDEO_ID" aria-label="Play walkthrough: MGL"><span class="play">▶ Watch the walkthrough</span></button> -->
   </div>
 
   <dl class="glance">
@@ -103,16 +102,16 @@
     <h3>Production login always looked logged out</h3>
     <p>Middleware has to guess whether the session cookie carries the <code>__Secure-</code> prefix used over HTTPS. Behind Vercel's proxy, the request doesn't reliably show the original protocol, so it looked for the wrong cookie. The fix sets that explicitly in production.</p>
     <h3>"Sign in to add" right after signing in</h3>
-    <p>Login redirects on the client, and the session provider kept the empty session it had cached on the login page. <!-- EDIT: one sentence on the fix. --> A Playwright test now logs in, moves to search without a page reload (it plants a marker that a reload would erase), and checks that the add-to-list controls appear.</p>
+    <p>Login redirects on the client, and the session provider kept the empty session it had cached on the login page. The fix reads the session on the server in the root layout and passes it to the provider, keyed on the user ID so the provider resets whenever someone signs in or out. A Playwright test now logs in, moves to search without a page reload (it plants a marker that a reload would erase), and checks that the add-to-list controls appear.</p>
 
     <h2>Testing on small screens</h2>
     <p>Beyond login, registration and search, a responsive test suite checks that no page scrolls sideways at several screen sizes, that buttons and inputs are big enough to tap, and that no control only works on hover.</p>
 
     <h2>Screens</h2>
     <div class="gallery web">
-      <div class="media ph">[Game list, desktop]</div>
-      <div class="media ph">[Search results]</div>
-      <div class="media ph">[Entry editor]</div>
+      <div class="media"><img src="../assets/img/mgl/screen-list.webp" width="1280" height="800" alt="MyGameList Completed list: game cards with star ratings, hours, start and completion dates, and short reviews." loading="lazy" decoding="async"></div>
+      <div class="media"><img src="../assets/img/mgl/screen-search.webp" width="1280" height="800" alt="MyGameList search results for “zelda”: game cards with cover art, ratings, release dates and platforms." loading="lazy" decoding="async"></div>
+      <div class="media"><img src="../assets/img/mgl/screen-editor.webp" width="1280" height="800" alt="MyGameList add-to-library form for Breath of the Wild, with Completed selected and a 10/10 rating." loading="lazy" decoding="async"></div>
     </div>
 
     <h2>What's next</h2>

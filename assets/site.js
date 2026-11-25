@@ -21,3 +21,13 @@ document.querySelectorAll("button.yt[data-yt]").forEach(function (btn) {
     btn.replaceWith(box);
   }, { once: true });
 });
+
+// Autoplaying loops stay still for people who ask for reduced motion;
+// they get the poster frame and normal controls instead.
+if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  document.querySelectorAll("video[autoplay]").forEach(function (v) {
+    v.removeAttribute("autoplay");
+    v.pause();
+    v.controls = true;
+  });
+}
