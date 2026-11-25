@@ -182,3 +182,16 @@ figcaption{font-size:14px;color:var(--muted);margin-top:8px}
   .next .right{text-align:left;margin-left:0}
 }
 @media (max-width:760px){.flow{flex-direction:column;align-items:flex-start}.flow i{padding-left:14px}}
+
+/* Side-by-side phone frames */
+.compare{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:8px 0 24px}
+.compare figure{margin:0}
+.compare img,.compare video,.compare .ph{width:100%;aspect-ratio:600/1304;object-fit:cover;border-radius:18px;border:1px solid var(--line);background:var(--ph)}
+.compare .ph{display:flex;font-size:12px}
+.compare figcaption{font-size:13px;line-height:1.45;margin-top:8px}
+.compare figcaption b{display:block;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.02em}
+.compare.two{grid-template-columns:repeat(2,minmax(0,1fr));max-width:480px}
+.version{font-family:var(--mono);font-size:12px;color:var(--accent);margin:40px 0 4px}
+.version + h3{margin-top:0}
+.fine{font-size:14px;color:var(--muted)}
+@media (max-width:760px){.compare{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -39,7 +39,7 @@
     <h1>Loba: Local Posts</h1>
     <p class="lede">An anonymous, hyperlocal message board for iOS. Instead of following people, you see what's being said around you: a noisy construction site, a good food truck, a lost dog.</p>
     <div class="btns">
-      <a class="btn primary" href="https://github.com/arnoldson/YOUR_LOBA_REPO">Code on GitHub</a>
+      <a class="btn primary" href="https://github.com/arnoldson/loba">Code on GitHub</a>
       <a class="btn" href="../#contact">TestFlight build on request</a>
     </div>
   </div>
@@ -52,8 +52,8 @@
   <dl class="glance">
     <div><dt>role</dt><dd>Solo: app, API, release</dd></div>
     <div><dt>status</dt><dd>Distributed on TestFlight</dd></div>
-    <div><dt>stack</dt><dd>React Native, TypeScript</dd></div>
-    <div><dt>backend</dt><dd>API on Railway <!-- EDIT: framework + database --></dd></div>
+    <div><dt>app</dt><dd>React Native, TypeScript</dd></div>
+    <div><dt>backend</dt><dd>Fastify, Kysely, PostGIS</dd></div>
   </dl>
 
   <article class="prose">
@@ -62,14 +62,16 @@
       <li>A feed of posts near your current location.</li>
       <li>A map showing your position and nearby posts together.</li>
       <li>Anonymous posting: no profiles and no followers.</li>
-      <li>Posts expire after a set time, so the feed stays current.</li>
+      <li>Posts fade: 24 hours by default, extended by upvotes from people nearby.</li>
+      <li>Voting and commenting only work within 50 m of a post.</li>
     </ul>
 
     <h2>How it works</h2>
-    <div class="flow" aria-label="iOS app to the API on Railway to the database">
-      <span>iOS app (React Native)</span><i>→</i><span>API (apps/backend, Railway)</span><i>→</i><span>[database]</span>
+    <div class="flow" aria-label="iOS app to the Fastify API on Railway to Postgres with PostGIS on Supabase">
+      <span>iOS app (React Native)</span><i>→</i><span>Fastify + Kysely API (Railway)</span><i>→</i><span>Postgres + PostGIS (Supabase)</span>
     </div>
-    <p>The app and the API live in one monorepo. <!-- EDIT: one or two sentences on how "posts near me" is queried, e.g. a geo index or distance filter. --></p>
+    <p>The app and the API live in one monorepo. Supabase provides the database and authentication.</p>
+    <p>"Posts near me" is a <strong>bounding-box query on a geo index</strong>, not a radius filter. Each post stores a PostGIS <code>geography</code> point with a GIST (R-tree) index. The app sends the visible map area and the screen size. The server snaps that box to fixed steps, so markers and caching stay stable as you pan. It then groups posts into sectors from a grid anchored to the world in Web Mercator coordinates, and returns a post count and bounds for each one. Posts themselves are fetched only when you tap a sector.</p>
 
     <h2>Key decisions</h2>
     <div class="decision">
@@ -89,16 +91,61 @@
       </dl>
     </div>
     <div class="decision">
-      <h3>Location and anonymity</h3>
+      <h3>Counts first, posts on tap</h3>
       <dl>
-        <dt>problem</dt><dd>With exact coordinates, an "anonymous" post can point to someone's home.</dd>
-        <dt>choice</dt><dd>[EDIT: what you do, e.g. rounding stored coordinates or returning distances instead of positions. If it isn't built yet, say so and describe the plan.]</dd>
-        <dt>result</dt><dd>[EDIT]</dd>
+        <dt>problem</dt><dd>Drawing every post as a pin floods the map when zoomed out and sends far more data than anyone looks at.</dd>
+        <dt>choice</dt><dd>The server returns a count per map sector. Posts load only when you tap one.</dd>
+        <dt>result</dt><dd>Small responses, an evenly spaced map at any zoom level, and fewer post locations exposed to someone scanning the map.</dd>
+      </dl>
+    </div>
+    <div class="decision">
+      <h3>Posts that fade</h3>
+      <dl>
+        <dt>problem</dt><dd>A local feed is only useful if it's current.</dd>
+        <dt>choice</dt><dd>Posts last 24 hours, plus 2 hours per upvote, capped at 7 days. Expired posts are archived, then deleted after 30 days. Similar to how Waze reports expire.</dd>
+        <dt>result</dt><dd>People nearby decide what stays visible. The numbers are starting values, to be tuned with real usage.</dd>
+      </dl>
+    </div>
+    <div class="decision">
+      <h3>Location and anonymity: what's protected, and what isn't yet</h3>
+      <dl>
+        <dt>problem</dt><dd>With exact coordinates, an "anonymous" post made from home points to that home.</dd>
+        <dt>today</dt><dd>Exact coordinates are stored on the server for the 50 m proximity checks. Posts never carry their own coordinates to the app. The finest level a client sees is a 3 m square node holding its posts, and zoomed out it sees only counts per sector.</dd>
+        <dt>honestly</dt><dd>3 m is about the width of a room, so on its own it isn't real privacy protection. Coarser locations for viewers, or random offsets added when a post is written, are planned.</dd>
       </dl>
     </div>
 
-    <h2>A bug worth mentioning</h2>
-    <p>The map couldn't show the current-location pin and a post's pin correctly at the same time. <!-- EDIT: one sentence on the root cause and the fix. --></p>
+    <h2>The hard part: a map grid that's square and stable</h2>
+    <p>Zoomed out, Loba groups posts into map sectors and shows a count for each. Getting those sectors right took three versions. I ran each one against the same 160 posts in two places: central Seoul (37.6°N), and the Arctic Ocean at 80°N, where a degree of longitude is only about 19 km wide.</p>
+
+    <p class="version">Version 1 · fixed latitude/longitude grid</p>
+    <h3>Stable, but the wrong shape</h3>
+    <p>Sectors were fixed steps of latitude and longitude, anchored to the world, so they held still while you panned. But a degree of longitude shrinks with latitude (by cos φ) and a degree of latitude doesn't. In Seoul the cells were already about 20% taller than wide. At 80°N a longitude step is about 5.8× narrower, so the grid collapsed into thin slivers holding one post each: roughly 100 overlapping "1" markers (<a href="https://github.com/arnoldson/loba/issues/60">#60</a>).</p>
+    <div class="compare">
+      <figure><img src="../assets/img/loba/v1-seoul-launch.webp" width="600" height="1304" alt="Version 1 in Seoul: a grid of cells slightly taller than wide over the street map, with counts of 1 to 4." loading="lazy" decoding="async"><figcaption><b>SEOUL · LAUNCH</b>Cells already taller than wide.</figcaption></figure>
+      <figure><img src="../assets/img/loba/v1-80n-launch.webp" width="600" height="1304" alt="Version 1 at 80 degrees north: a dense band of very thin vertical slivers with dozens of overlapping markers that each show 1." loading="lazy" decoding="async"><figcaption><b>80°N · LAUNCH</b>Slivers too thin to group anything.</figcaption></figure>
+      <figure><video src="../assets/img/loba/v1-80n-pans.mp4" poster="../assets/img/loba/v1-80n-pans-poster.webp" width="480" height="1044" muted loop playsinline controls preload="none" aria-label="Version 1 at 80 degrees north while panning: slivers fill the screen and markers stack on each other."></video><figcaption><b>80°N · PANNING (4×)</b>Markers stack where slivers sit closer than a marker is wide.</figcaption></figure>
+    </div>
+
+    <p class="version">Version 2 · grid cut from the viewport</p>
+    <h3>The right shape, but it moved</h3>
+    <p><a href="https://github.com/arnoldson/loba/issues/63">#63</a> sized the grid from the visible region, so cells came out roughly square at any latitude. But the grid's origin came from the screen, so every pan re-cut it and posts regrouped. The same place showed a different picture depending on how you got there (<a href="https://github.com/arnoldson/loba/issues/93">#93</a>).</p>
+    <div class="compare">
+      <figure><img src="../assets/img/loba/v2-seoul-launch.webp" width="600" height="1304" alt="Version 2 in Seoul at launch: square cells over the street map, second row reading 2, 2, 4, 2, 2, 4." loading="lazy" decoding="async"><figcaption><b>SEOUL · LAUNCH</b>Square cells.</figcaption></figure>
+      <figure><img src="../assets/img/loba/v2-seoul-pan-left.webp" width="600" height="1304" alt="Version 2 in Seoul after one pan to the left: the same posts regrouped, with the 4s in different places and an empty column." loading="lazy" decoding="async"><figcaption><b>AFTER ONE PAN</b>Same posts, different groups.</figcaption></figure>
+      <figure><video src="../assets/img/loba/v2-seoul-pans.mp4" poster="../assets/img/loba/v2-seoul-pans-poster.webp" width="480" height="1044" muted loop playsinline controls preload="none" aria-label="Version 2 in Seoul while panning: the grid follows the screen and posts regroup."></video><figcaption><b>PANNING (2×)</b>The grid follows the screen, not the map.</figcaption></figure>
+    </div>
+
+    <p class="version">Version 3 · world-anchored Web Mercator grid</p>
+    <h3>Square and stable</h3>
+    <p><a href="https://github.com/arnoldson/loba/issues/93">#93</a> anchored the grid to the world again, this time in Web Mercator coordinates, the projection the map itself draws in. A cell's boundaries depend only on the zoom level, never on where the viewport sits. Cells are square on screen at every latitude, and panning away and back returns the identical picture.</p>
+    <div class="compare">
+      <figure><img src="../assets/img/loba/v3-80n-launch.webp" width="600" height="1304" alt="Version 3 at 80 degrees north: square cells, one marker per cell, laid out evenly." loading="lazy" decoding="async"><figcaption><b>80°N · LAUNCH</b>Still square near the pole.</figcaption></figure>
+      <figure><img src="../assets/img/loba/v3-seoul-launch.webp" width="600" height="1304" alt="Version 3 in Seoul at launch: square cells with counts up to 7." loading="lazy" decoding="async"><figcaption><b>SEOUL · LAUNCH</b>Square cells, counts up to 7.</figcaption></figure>
+      <figure><img src="../assets/img/loba/v3-seoul-pan-back.webp" width="600" height="1304" alt="Version 3 in Seoul after panning away and back: identical cells and counts to the launch frame." loading="lazy" decoding="async"><figcaption><b>SEOUL · PAN BACK</b>Identical to launch.</figcaption></figure>
+    </div>
+    <p>Two fixes along the way: upgrading react-native-maps to 1.29 on React Native's new architecture fixed markers that went missing (<a href="https://github.com/arnoldson/loba/issues/95">#95</a>), and the first fetch now uses the map's real region instead of a placeholder, which had sized sectors for the wrong view (<a href="https://github.com/arnoldson/loba/issues/97">#97</a>).</p>
+    <p class="fine">How I tested: every version read the same local database and ran the same scripted sequence (launch, pan left, pan up, pan back, zoom in, recenter) with a developer toggle that draws the sector outlines. Differences between versions come from the grid code, not the data.</p>
 
     <h2>Screens</h2>
     <div class="gallery phones">
@@ -111,6 +158,7 @@
     <ul>
       <li>Content filtering and a report flow for posts.</li>
       <li>Blocking abusive users, which is hard to do while staying anonymous.</li>
+      <li>Location protection that holds up: coarser positions for viewers, or random offsets added when a post is written.</li>
       <li>Published contact information and a moderation process.</li>
     </ul>
   </article>
