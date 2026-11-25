@@ -46,9 +46,8 @@
   </div>
 
   <div class="p-media">
-    <div class="media ph" style="aspect-ratio:16/9">[Walkthrough video: symptom → 470/s math → before run → fix → results]</div>
-    <!-- Once uploaded, replace the div above with:
-    <button class="yt" data-yt="YOUTUBE_VIDEO_ID" aria-label="Play walkthrough: ephemeral port exhaustion"><span class="play">▶ Watch the 90-second walkthrough</span></button> -->
+    <div class="media" style="aspect-ratio:16/9"><video src="../assets/img/port-exhaustion/loop.mp4" poster="../assets/img/port-exhaustion/loop-poster.webp" width="1280" height="720" autoplay muted loop playsinline preload="metadata" aria-label="The live terminal dashboard, sped up 12 times: with a new connection per request, TIME_WAIT fills all 28,232 ports and calls fail in cycles; with the connection pool, TIME_WAIT stays near 0 and every call succeeds"></video></div>
+    <!-- Walkthrough: <button class="yt" data-yt="YOUTUBE_VIDEO_ID" aria-label="Play walkthrough: ephemeral port exhaustion"><span class="play">▶ Watch the walkthrough</span></button> -->
   </div>
 
   <dl class="glance">
@@ -60,7 +59,7 @@
 
   <article class="prose">
     <h2>The incident</h2>
-    <p>Service A called service B over <code>localhost</code> once per incoming request, opening a brand-new TCP connection each time and closing it right after. Under sustained load, calls started failing even though nothing looked overloaded. Restarting "fixed" it until the next peak.</p>
+    <p>Service A called service B over <code>localhost</code> once per incoming request, opening a brand-new TCP connection each time and closing it right after. Under sustained load, calls started failing even though nothing looked overloaded.</p>
 
     <h2>Why it happens</h2>
     <p>Every outgoing connection needs its own <strong>ephemeral port</strong>, and Linux hands out 28,232 of them by default. When A closes a connection, that port isn't free yet. It stays in <strong>TIME_WAIT for 60 seconds</strong>, so stray packets from the old connection can't leak into a new one.</p>
@@ -75,8 +74,8 @@
     </div>
     <p>Both services run in Docker. A shares B's network namespace, so they talk over real loopback, and a sampler records TIME_WAIT and established sockets every second. One command runs all four scenarios with a live terminal dashboard.</p>
     <figure>
-      <div class="media ph" style="aspect-ratio:16/9">[Terminal dashboard during the "before" run]</div>
-      <figcaption>The live dashboard during the "before" scenario.</figcaption>
+      <img src="../assets/img/port-exhaustion/dashboard-before.webp" width="1280" height="720" alt="Terminal dashboard 130 seconds into the before scenario: A-side TIME_WAIT at 28,231 of 28,232 ports, 0 successful and 996 failed calls per second, and sparklines showing calls failing, recovering and failing again." loading="lazy" decoding="async">
+      <figcaption>The live dashboard 130 s into the "before" scenario: every port is in TIME_WAIT, and the sparklines show calls failing, recovering as ports expire, then failing again.</figcaption>
     </figure>
 
     <h2>Results</h2>
@@ -131,6 +130,10 @@
     <p>The kernel workaround also stops the errors, but every request still pays for a TCP handshake and teardown. That shows up as higher p90 latency (about 2× the pool's) and more CPU on the server, which has to accept and close 1,000 connections a second. Widening the port range only raises the ceiling. Reusing connections removes the cause.</p>
     <figure>
       <img src="../assets/charts/latency.svg" width="720" height="380" alt="Latency percentiles: pool p50 0.55 ms, p90 1.34 ms, p99 3.17 ms; Jetty 0.71, 1.57, 3.57 ms; kernel workaround 0.88, 2.84, 4.94 ms." loading="lazy" decoding="async">
+    </figure>
+    <figure>
+      <img src="../assets/charts/cpu.svg" width="720" height="380" alt="CPU in percent of one core: pool A 29% plus B 8%, 37% total; Jetty A 37% plus B 8%, 45% total; kernel workaround A 32% plus B 25%, 56% total." loading="lazy" decoding="async">
+      <figcaption>The workaround's cost lands mostly on the server: B needs about 3× the CPU to accept and close 1,000 connections a second.</figcaption>
     </figure>
 
     <h2>Honest notes</h2>
